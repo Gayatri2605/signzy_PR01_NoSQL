@@ -16,7 +16,7 @@
 	
 			<!-- User input form to add a new task or update the existing task-->
 	        <c:url var="saveUrl" value="/mainList/save" />
-	        <form:form id="user_form" modelAttribute="taskAttr" method="POST" action="${saveUrl}">
+	        <form:form id="task_form" modelAttribute="taskAttr" method="POST" action="${saveUrl}">
 	        <form:hidden path="mode" />
 	            <label for="title">Title:</label>
 	            <form:input id="title_name" cssClass="form-control" path="title" />
