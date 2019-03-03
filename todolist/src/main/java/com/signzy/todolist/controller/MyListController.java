@@ -91,15 +91,15 @@ public class MyListController {
 	 */
 	@RequestMapping(value = "/save", method = RequestMethod.POST)
 	public String saveTask(@ModelAttribute("taskAttr") MyListModel myListModel) {
-		boolean redirect = false;
-		if (myListModel.getMode() == 1)
-			redirect = myListService.edit(myListModel);
-		else
-			redirect = myListService.add(myListModel);
-		if (redirect)
+		if (myListModel.getMode() == 1) {
+			myListService.edit(myListModel);
 			return "redirect:list";
-		else
-			return "redirect:error";
+		} else {
+			if (myListService.add(myListModel))
+				return "redirect:list";
+			else
+				return "redirect:error";
+		}
 	}
 
 	/**

@@ -7,7 +7,6 @@ import java.util.Objects;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -88,15 +87,10 @@ public class MyListService {
 			BasicDBObject existing = (BasicDBObject) getDBObject(myListModel.getTitle());
 			DBCollection coll = MongoFactory.getCollection(db_name, db_collection);
 			BasicDBObject edited = new BasicDBObject();
-			DBObject where_query = new BasicDBObject();
-			where_query.put("title", myListModel.getTitle());
-			DBObject dbo = coll.findOne(where_query);
-			if (Objects.isNull(dbo)) {
-				edited.put("title", myListModel.getTitle());
-				edited.put("desc", myListModel.getDesc());
-				coll.update(existing, edited);
-				output = true;
-			}
+			edited.put("title", myListModel.getTitle());
+			edited.put("desc", myListModel.getDesc());
+			coll.update(existing, edited);
+			output = true;
 		} catch (Exception e) {
 			System.out.println("An error has occurred while updating an existing user to the mongo database" + e);
 		}
@@ -146,17 +140,12 @@ public class MyListService {
 	public MyListModel findUserId(String title) {
 		MyListModel myListModel = new MyListModel();
 		DBCollection coll = MongoFactory.getCollection(db_name, db_collection);
-
-		// Fetching the record object from the mongo database.
 		DBObject where_query = new BasicDBObject();
 		where_query.put("title", title);
-
 		DBObject dbo = coll.findOne(where_query);
 		myListModel.setTitle(dbo.get("title").toString());
 		myListModel.setDesc(dbo.get("desc").toString());
 		myListModel.setMode(1);
-
-		// Return user object.
 		return myListModel;
 	}
 }
