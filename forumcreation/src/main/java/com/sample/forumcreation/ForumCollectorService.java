@@ -1,7 +1,6 @@
 package com.sample.forumcreation;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -14,16 +13,17 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
-import com.sample.forumcreation.model.ForumDataModel;
+import com.sample.forumcreation.model.CommentModel;
 import com.sample.forumcreation.model.UserDetailModel;
 import com.sample.forumcreation.mongofactory.MongoFactory;
 
 @Service("forumCollectorService")
 @Transactional
 public class ForumCollectorService {
-	static String db_name = "ForumCreateDataBase", db_user_collection = "userDetail",db_forum_collection = "forumData";
+	static String db_name = "ForumCreateDataBase", db_user_collection = "userDetail",
+			db_comment_collection = "commentData";
 	static DBCollection userCol = MongoFactory.getCollection(db_name, db_user_collection);
-	static DBCollection forumCol = MongoFactory.getCollection(db_name, db_forum_collection);
+	static DBCollection forumCol = MongoFactory.getCollection(db_name, db_comment_collection);
 	private static Logger log = Logger.getLogger(ForumCollectorService.class);
 
 	public boolean authenticateUser(UserDetailModel userDetailModel) {
@@ -32,27 +32,31 @@ public class ForumCollectorService {
 			return true;
 		return false;
 	}
-	
+
 	private DBObject basicUserData(UserDetailModel userDetailModel, boolean passFlag) {
 		DBObject where_query = new BasicDBObject();
 		where_query.put("email", userDetailModel.getEmail());
 		if (passFlag)
 			where_query.put("pass", userDetailModel.getPass());
 		DBObject dbo = userCol.findOne(where_query);
-		if(Objects.nonNull(dbo))
+		if (Objects.nonNull(dbo)) {
 			userDetailModel.setName(dbo.get("name").toString());
+			userDetailModel.setUserId(dbo.get("userId").toString());
+		}
 		return dbo;
 	}
 
 	public boolean registerUser(UserDetailModel userDetailModel) {
 		boolean result = false;
 		DBObject dbo = basicUserData(userDetailModel, false);
+		String userID = UUID.randomUUID().toString();
 		try {
 			if (Objects.isNull(dbo)) {
 				BasicDBObject doc = new BasicDBObject();
 				doc.put("name", userDetailModel.getName());
 				doc.put("email", userDetailModel.getEmail());
 				doc.put("pass", userDetailModel.getPass());
+				doc.put("userId", userID);
 				userCol.insert(doc);
 				result = true;
 			}
@@ -61,48 +65,44 @@ public class ForumCollectorService {
 		}
 		return result;
 	}
-	
 
-	public List<ForumDataModel> getForumDetails() {
-		List<ForumDataModel> forumDataModelList = new ArrayList();
+	public List<CommentModel> getCommentDetails() {
+		List<CommentModel> commentModelList = new ArrayList();
 		DBCursor cursor = forumCol.find();
 		while (cursor.hasNext()) {
 			DBObject dbObject = cursor.next();
-			ForumDataModel forumDataModel = new ForumDataModel();
-			forumDataModel.setName(dbObject.get("name").toString());
-			forumDataModel.setEmail(dbObject.get("email").toString());
-			forumDataModel.setComment(dbObject.get("comment").toString());
-			forumDataModel.setCommentId(dbObject.get("commentId").toString());
-			forumDataModel.setReplyList((List<String>)dbObject.get("replyList"));
-			forumDataModelList.add(forumDataModel);
+			CommentModel commentModel = new CommentModel();
+			commentModel.setName(dbObject.get("name").toString());
+			commentModel.setUserId(dbObject.get("userId").toString());
+			commentModel.setComment(dbObject.get("comment").toString());
+			commentModel.setCommentId(dbObject.get("commentId").toString());
+			commentModel.setParentId(dbObject.get("commentId").toString());
+			if (Objects.nonNull(dbObject.get("reply")))
+				commentModel.setReply(dbObject.get("reply").toString());
+			commentModelList.add(commentModel);
 		}
-		return forumDataModelList;
+		return commentModelList;
 	}
 
-	public void addComment(ForumDataModel forumDataModelList) {
+	public void addComment(CommentModel commentModel) {
 		BasicDBObject doc = new BasicDBObject();
-		doc.put("comment", forumDataModelList.getComment());
-		doc.put("commentId", UUID.randomUUID().toString());
-		doc.put("name", forumDataModelList.getName());
-		doc.put("email", forumDataModelList.getEmail());
+		String commentId = UUID.randomUUID().toString();
+		doc.put("name", commentModel.getName());
+		doc.put("userId", commentModel.getUserId());
+		doc.put("comment", commentModel.getComment());
+		doc.put("commentId", commentId);
+		doc.put("parentId", commentId);
 		forumCol.insert(doc);
 	}
 
-	public void addReply(ForumDataModel forumDataModelList, String reply) {
+	public void addReply(CommentModel commentModel, String reply) {
 		DBObject where_query = new BasicDBObject();
-		where_query.put("name", forumDataModelList.getName());
-		where_query.put("email", forumDataModelList.getEmail());
+		where_query.put("name", commentModel.getName());
 		DBObject existing = forumCol.findOne(where_query);
 		BasicDBObject edited = new BasicDBObject();
-		if (Objects.isNull(existing.get("replyList")))
-			edited.put("replyList", Arrays.asList(reply));
-		else {
-			List<String> newReplyList = (List<String>) existing.get("replyList");
-			newReplyList.addAll(Arrays.asList(reply));
-			edited.put("replyList", newReplyList);
-		}
+		edited.put("reply", reply);
 		edited.put("name", existing.get("name").toString());
-		edited.put("email", existing.get("email").toString());
+		edited.put("userId", existing.get("userId").toString());
 		edited.put("comment", existing.get("comment").toString());
 		edited.put("commentId", existing.get("commentId").toString());
 		forumCol.update(existing, edited);

@@ -5,15 +5,15 @@ package com.sample.forumcreation.controller;
 import java.util.List;
 
 import javax.annotation.Resource;
+
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.sample.forumcreation.ForumCollectorService;
-import com.sample.forumcreation.model.ForumDataModel;
+import com.sample.forumcreation.model.CommentModel;
 import com.sample.forumcreation.model.UserDetailModel;
 
 
@@ -53,12 +53,11 @@ public class ForumController {
 	public String loginTask(UserDetailModel userDetailModel,Model model) {
 		log.debug("login place"+" "+userDetailModel.getName()+" "+userDetailModel.getPass());
 		boolean resultTask = forumCollectorService.authenticateUser(userDetailModel);
-		if(resultTask) {
-			model.addAttribute("userDetailModel", userDetailModel);
-			List<ForumDataModel> forumDataModelList =  forumCollectorService.getForumDetails();
-			model.addAttribute("commentList", forumDataModelList);
+		if (resultTask) {
+			List<CommentModel> commentModelList = forumCollectorService.getCommentDetails();
+			model.addAttribute("commentList", commentModelList);
 			model.addAttribute("name", userDetailModel.getName());
-			model.addAttribute("email", userDetailModel.getEmail());
+			model.addAttribute("userId", userDetailModel.getUserId());
 			return "forum_profile";
 		}
 		else {
@@ -68,22 +67,22 @@ public class ForumController {
 	}
 	
 	@RequestMapping(value = "/addComment", method = RequestMethod.POST)
-	public String addComment(ForumDataModel forumDataModelList,Model model) {
-		forumCollectorService.addComment(forumDataModelList);
-		List<ForumDataModel> forumDataModelListNew =  forumCollectorService.getForumDetails();
-		model.addAttribute("commentList", forumDataModelListNew);
-		model.addAttribute("name", forumDataModelList.getName());
-		model.addAttribute("email", forumDataModelList.getEmail());
+	public String addComment(CommentModel commentModel, Model model) {
+		forumCollectorService.addComment(commentModel);
+		List<CommentModel> commentModelList = forumCollectorService.getCommentDetails();
+		model.addAttribute("commentList", commentModelList);
+		model.addAttribute("name", commentModel.getName());
+		model.addAttribute("email", commentModel.getUserId());
 		return "forum_profile";
 	}
 	
 	@RequestMapping(value = "/postReply", method = RequestMethod.POST)
-	public String postReply(ForumDataModel forumDataModelList,String reply,Model model) {
-		forumCollectorService.addReply(forumDataModelList,reply);
-		List<ForumDataModel> forumDataModelListNew =  forumCollectorService.getForumDetails();
-		model.addAttribute("commentList", forumDataModelListNew);
-		model.addAttribute("name", forumDataModelList.getName());
-		model.addAttribute("email", forumDataModelList.getEmail());
+	public String postReply(CommentModel commentModel, String reply, Model model) {
+		forumCollectorService.addReply(commentModel, reply);
+		List<CommentModel> commentModelList = forumCollectorService.getCommentDetails();
+		model.addAttribute("commentList", commentModelList);
+		model.addAttribute("name", commentModel.getName());
+		model.addAttribute("email", commentModel.getUserId());
 		return "forum_profile";
 	}
 
